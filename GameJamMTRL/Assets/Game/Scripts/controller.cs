@@ -22,7 +22,7 @@ public class PlayerMovementTutorial : MonoBehaviour
 
     [Header("Ground Check")]
     public LayerMask whatIsGround;
-    private bool grounded; // Plus besoin de Raycast ici
+    private bool grounded;
 
     public Transform orientation;
 
@@ -44,8 +44,7 @@ public class PlayerMovementTutorial : MonoBehaviour
         MyInput();
         SpeedControl();
         HandleScaling();
-
-        // Gestion du drag simplifiée
+        
         rb.linearDamping = grounded ? groundDrag : 0;
     }
 
@@ -69,15 +68,30 @@ public class PlayerMovementTutorial : MonoBehaviour
 
     private void HandleScaling()
     {
-        // On combine les inputs pour savoir si on doit grandir ou rétrécir
-        float combinedInput = Mathf.Abs(verticalInput) > 0 ? verticalInput : horizontalInput;
-
-        if (combinedInput != 0)
+        if (verticalInput != 0)
         {
-            float scaleChange = combinedInput * scaleSpeed * Time.deltaTime;
-            float newScaleValue = Mathf.Clamp(transform.localScale.y + scaleChange, minScale, maxScale);
+            // verticalInput est positif (1) en avançant, négatif (-1) en reculant
+            float scaleChange = (verticalInput * scaleSpeed * Time.deltaTime) * -1.0f;
+            Vector3 newScale = transform.localScale + Vector3.one * scaleChange;
+
+            // On limite la taille entre le min et le max
+            newScale.x = Mathf.Clamp(newScale.x, minScale, maxScale);
+            newScale.y = Mathf.Clamp(newScale.y, minScale, maxScale);
+            newScale.z = Mathf.Clamp(newScale.z, minScale, maxScale);
+
+            transform.localScale = newScale;
+        }
+        
+        if (horizontalInput != 0)
+        {
+            float scaleChange = horizontalInput * scaleSpeed * Time.deltaTime;
+            Vector3 newScale = transform.localScale + Vector3.one * scaleChange;
             
-            transform.localScale = Vector3.one * newScaleValue;
+            newScale.x = Mathf.Clamp(newScale.x, minScale, maxScale);
+            newScale.y = Mathf.Clamp(newScale.y, minScale, maxScale);
+            newScale.z = Mathf.Clamp(newScale.z, minScale, maxScale);
+
+            transform.localScale = newScale;
         }
     }
 
@@ -106,7 +120,6 @@ public class PlayerMovementTutorial : MonoBehaviour
     {
         rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
         
-        // On garde la force de saut relative à la taille pour que ça reste jouable
         rb.AddForce(transform.up * jumpForce * transform.localScale.y, ForceMode.Impulse);
     }
 
