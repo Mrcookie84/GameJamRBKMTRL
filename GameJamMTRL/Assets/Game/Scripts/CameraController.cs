@@ -19,10 +19,10 @@ public class MouseLook : MonoBehaviour
     void Update()
     {
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
+        //float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
 
         // 1. ROTATION VERTICALE (On fait tourner la caméra sur elle-même)
-        rotationX -= mouseY;
+        //rotationX -= mouseY;
         rotationX = Mathf.Clamp(rotationX, -lookXLimit, lookXLimit);
         
         // On applique la rotation UNIQUEMENT à la caméra (cet objet)
