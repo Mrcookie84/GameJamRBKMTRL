@@ -1,33 +1,28 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using TMPro;
 
 public class PlayerMovementTutorial : MonoBehaviour
 {
     [Header("Movement")]
-    public float moveSpeed;
-    public float groundDrag;
-    public float jumpForce;
-    public float jumpCooldown;
-    public float airMultiplier;
+    public float moveSpeed = 7f;
+    public float groundDrag = 5f;
+    public float jumpForce = 12f;
+    public float jumpCooldown = 0.25f;
+    public float airMultiplier = 0.4f;
     bool readyToJump;
 
     [Header("Scaling Settings")]
-    public float scaleSpeed = 0.8f; // Vitesse à laquelle le player grandit/rétrécit
-    public float minScale = 0.5f;   // Taille min
-    public float maxScale = 5f;     // Taille max
-
-    [HideInInspector] public float walkSpeed;
-    [HideInInspector] public float sprintSpeed;
+    public float scaleSpeed = 0.8f;
+    public float minScale = 0.5f;
+    public float maxScale = 5f;
 
     [Header("Keybinds")]
     public KeyCode jumpKey = KeyCode.Space;
 
     [Header("Ground Check")]
-    public float playerHeight;
     public LayerMask whatIsGround;
-    bool grounded;
+    private bool grounded; // Plus besoin de Raycast ici
 
     public Transform orientation;
 
@@ -41,24 +36,17 @@ public class PlayerMovementTutorial : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
-
         readyToJump = true;
     }
 
     private void Update()
     {
-        // Ground check dynamique (on multiplie par la scale actuelle pour que ça marche toujours)
-        grounded = Physics.Raycast(transform.position, Vector3.down, (playerHeight * transform.localScale.y) * 0.5f + 0.3f, whatIsGround);
-
         MyInput();
         SpeedControl();
-        HandleScaling(); // <--- Appel de la nouvelle fonction
+        HandleScaling();
 
-        // handle drag
-        if (grounded)
-            rb.linearDamping = groundDrag;
-        else
-            rb.linearDamping = 0;
+        // Gestion du drag simplifiée
+        rb.linearDamping = grounded ? groundDrag : 0;
     }
 
     private void FixedUpdate()
@@ -71,8 +59,7 @@ public class PlayerMovementTutorial : MonoBehaviour
         horizontalInput = Input.GetAxisRaw("Horizontal");
         verticalInput = Input.GetAxisRaw("Vertical");
 
-        // when to jump
-        if(Input.GetKey(jumpKey) && readyToJump && grounded)
+        if (Input.GetKey(jumpKey) && readyToJump && grounded)
         {
             readyToJump = false;
             Jump();
@@ -82,35 +69,15 @@ public class PlayerMovementTutorial : MonoBehaviour
 
     private void HandleScaling()
     {
-        // Si on avance (W) ou recule (S)
-        if (verticalInput != 0)
+        // On combine les inputs pour savoir si on doit grandir ou rétrécir
+        float combinedInput = Mathf.Abs(verticalInput) > 0 ? verticalInput : horizontalInput;
+
+        if (combinedInput != 0)
         {
-            // On calcule la nouvelle échelle
-            // verticalInput est positif (1) en avançant, négatif (-1) en reculant
-            float scaleChange = verticalInput * scaleSpeed * Time.deltaTime;
-            Vector3 newScale = transform.localScale + Vector3.one * scaleChange;
-
-            // On limite la taille entre le min et le max
-            newScale.x = Mathf.Clamp(newScale.x, minScale, maxScale);
-            newScale.y = Mathf.Clamp(newScale.y, minScale, maxScale);
-            newScale.z = Mathf.Clamp(newScale.z, minScale, maxScale);
-
-            transform.localScale = newScale;
-        }
-        
-        if (horizontalInput != 0)
-        {
-            // On calcule la nouvelle échelle
-            // verticalInput est positif (1) en avançant, négatif (-1) en reculant
-            float scaleChange = horizontalInput * scaleSpeed * Time.deltaTime;
-            Vector3 newScale = transform.localScale + Vector3.one * scaleChange;
-
-            // On limite la taille entre le min et le max
-            newScale.x = Mathf.Clamp(newScale.x, minScale, maxScale);
-            newScale.y = Mathf.Clamp(newScale.y, minScale, maxScale);
-            newScale.z = Mathf.Clamp(newScale.z, minScale, maxScale);
-
-            transform.localScale = newScale;
+            float scaleChange = combinedInput * scaleSpeed * Time.deltaTime;
+            float newScaleValue = Mathf.Clamp(transform.localScale.y + scaleChange, minScale, maxScale);
+            
+            transform.localScale = Vector3.one * newScaleValue;
         }
     }
 
@@ -118,9 +85,9 @@ public class PlayerMovementTutorial : MonoBehaviour
     {
         moveDirection = orientation.forward * verticalInput + orientation.right * horizontalInput;
 
-        if(grounded)
+        if (grounded)
             rb.AddForce(moveDirection.normalized * moveSpeed * 10f, ForceMode.Force);
-        else if(!grounded)
+        else
             rb.AddForce(moveDirection.normalized * moveSpeed * 10f * airMultiplier, ForceMode.Force);
     }
 
@@ -128,7 +95,7 @@ public class PlayerMovementTutorial : MonoBehaviour
     {
         Vector3 flatVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
 
-        if(flatVel.magnitude > moveSpeed)
+        if (flatVel.magnitude > moveSpeed)
         {
             Vector3 limitedVel = flatVel.normalized * moveSpeed;
             rb.linearVelocity = new Vector3(limitedVel.x, rb.linearVelocity.y, limitedVel.z);
@@ -138,11 +105,30 @@ public class PlayerMovementTutorial : MonoBehaviour
     private void Jump()
     {
         rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-        rb.AddForce(transform.up * jumpForce, ForceMode.Impulse);
+        
+        // On garde la force de saut relative à la taille pour que ça reste jouable
+        rb.AddForce(transform.up * jumpForce * transform.localScale.y, ForceMode.Impulse);
     }
 
     private void ResetJump()
     {
         readyToJump = true;
+    }
+
+    private void OnCollisionStay(Collision collision)
+    {
+        
+        if (((1 << collision.gameObject.layer) & whatIsGround) != 0)
+        {
+            grounded = true;
+        }
+    }
+
+    private void OnCollisionExit(Collision collision)
+    {
+        if (((1 << collision.gameObject.layer) & whatIsGround) != 0)
+        {
+            grounded = false;
+        }
     }
 }
