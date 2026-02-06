@@ -16,7 +16,7 @@ public class PlayerMovementTutorial : MonoBehaviour
     public float scaleSpeed = 0.8f;
     public float minScale = 0.5f;
     public float maxScale = 5f;
-    public bool scalingActive;
+    private bool scaleLock = false;
 
     [Header("Keybinds")]
     public KeyCode jumpKey = KeyCode.Space;
@@ -32,10 +32,12 @@ public class PlayerMovementTutorial : MonoBehaviour
 
     Vector3 moveDirection;
     Rigidbody rb;
+    private Collider playerCollider;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
+        playerCollider = GetComponent<Collider>();
         rb.freezeRotation = true;
         readyToJump = true;
     }
@@ -45,6 +47,7 @@ public class PlayerMovementTutorial : MonoBehaviour
         MyInput();
         SpeedControl();
         HandleScaling();
+        UpdateFriction();
         
         rb.linearDamping = grounded ? groundDrag : 0;
     }
@@ -66,17 +69,43 @@ public class PlayerMovementTutorial : MonoBehaviour
             Invoke(nameof(ResetJump), jumpCooldown);
         }
 
-        if (Input.GetKey(KeyCode.LeftAlt))
+        if (Input.GetKey(KeyCode.L))
         {
-            scalingActive = !scalingActive;
+            if (scaleLock)
+            {
+                scaleLock = false;
+            }
+            else
+            {
+                scaleLock = true;
+            }
+        }
+    }
+
+    private void UpdateFriction()
+    {
+        if (grounded)
+        {
+            playerCollider.material.dynamicFriction = 0.6f;
+            playerCollider.material.staticFriction = 0.6f;
+            playerCollider.material.frictionCombine = PhysicsMaterialCombine.Average;
+        }
+        else
+        {
+            playerCollider.material.dynamicFriction = 0f;
+            playerCollider.material.staticFriction = 0f;
+            playerCollider.material.frictionCombine = PhysicsMaterialCombine.Minimum;
         }
     }
 
     private void HandleScaling()
     {
-        if (verticalInput != 0 && scalingActive)
+        if (scaleLock)
         {
-            // W augmente, S diminue (multiplié par -1 pour inverser selon ton setup)
+            return;    
+        }
+        if (verticalInput != 0)
+        {
             float scaleChange = (verticalInput * scaleSpeed * Time.deltaTime) * -1.0f;
             Vector3 newScale = transform.localScale + Vector3.one * scaleChange;
 
@@ -136,17 +165,14 @@ public class PlayerMovementTutorial : MonoBehaviour
     {
         if (((1 << collision.gameObject.layer) & whatIsGround) != 0)
         {
-            
             foreach (ContactPoint contact in collision.contacts)
             {
-                
                 if (contact.normal.y > 0.6f)
                 {
                     grounded = true;
                     return;
                 }
             }
-            
             grounded = false;
         }
     }
