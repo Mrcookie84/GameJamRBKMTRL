@@ -31,10 +31,12 @@ public class PlayerMovementTutorial : MonoBehaviour
 
     Vector3 moveDirection;
     Rigidbody rb;
+    private Collider playerCollider;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
+        playerCollider = GetComponent<Collider>();
         rb.freezeRotation = true;
         readyToJump = true;
     }
@@ -44,6 +46,7 @@ public class PlayerMovementTutorial : MonoBehaviour
         MyInput();
         SpeedControl();
         HandleScaling();
+        UpdateFriction();
         
         rb.linearDamping = grounded ? groundDrag : 0;
     }
@@ -66,11 +69,26 @@ public class PlayerMovementTutorial : MonoBehaviour
         }
     }
 
+    private void UpdateFriction()
+    {
+        if (grounded)
+        {
+            playerCollider.material.dynamicFriction = 0.6f;
+            playerCollider.material.staticFriction = 0.6f;
+            playerCollider.material.frictionCombine = PhysicsMaterialCombine.Average;
+        }
+        else
+        {
+            playerCollider.material.dynamicFriction = 0f;
+            playerCollider.material.staticFriction = 0f;
+            playerCollider.material.frictionCombine = PhysicsMaterialCombine.Minimum;
+        }
+    }
+
     private void HandleScaling()
     {
         if (verticalInput != 0)
         {
-            // W augmente, S diminue (multiplié par -1 pour inverser selon ton setup)
             float scaleChange = (verticalInput * scaleSpeed * Time.deltaTime) * -1.0f;
             Vector3 newScale = transform.localScale + Vector3.one * scaleChange;
 
@@ -130,17 +148,14 @@ public class PlayerMovementTutorial : MonoBehaviour
     {
         if (((1 << collision.gameObject.layer) & whatIsGround) != 0)
         {
-            
             foreach (ContactPoint contact in collision.contacts)
             {
-                
                 if (contact.normal.y > 0.6f)
                 {
                     grounded = true;
                     return;
                 }
             }
-            
             grounded = false;
         }
     }
