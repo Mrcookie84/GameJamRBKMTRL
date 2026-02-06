@@ -73,11 +73,11 @@ public class PlayerMovementTutorial : MonoBehaviour
         {
             if (scaleLock)
             {
-                scaleLock = false;
+                //scaleLock = false;
             }
             else
             {
-                scaleLock = true;
+                //scaleLock = true;
             }
         }
     }
