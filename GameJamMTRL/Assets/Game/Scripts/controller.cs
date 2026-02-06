@@ -16,6 +16,7 @@ public class PlayerMovementTutorial : MonoBehaviour
     public float scaleSpeed = 0.8f;
     public float minScale = 0.5f;
     public float maxScale = 5f;
+    public bool scalingActive;
 
     [Header("Keybinds")]
     public KeyCode jumpKey = KeyCode.Space;
@@ -64,11 +65,16 @@ public class PlayerMovementTutorial : MonoBehaviour
             Jump();
             Invoke(nameof(ResetJump), jumpCooldown);
         }
+
+        if (Input.GetKey(KeyCode.LeftAlt))
+        {
+            scalingActive = !scalingActive;
+        }
     }
 
     private void HandleScaling()
     {
-        if (verticalInput != 0)
+        if (verticalInput != 0 && scalingActive)
         {
             // W augmente, S diminue (multiplié par -1 pour inverser selon ton setup)
             float scaleChange = (verticalInput * scaleSpeed * Time.deltaTime) * -1.0f;
