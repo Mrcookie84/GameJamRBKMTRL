@@ -70,11 +70,10 @@ public class PlayerMovementTutorial : MonoBehaviour
     {
         if (verticalInput != 0)
         {
-            // verticalInput est positif (1) en avançant, négatif (-1) en reculant
+            // W augmente, S diminue (multiplié par -1 pour inverser selon ton setup)
             float scaleChange = (verticalInput * scaleSpeed * Time.deltaTime) * -1.0f;
             Vector3 newScale = transform.localScale + Vector3.one * scaleChange;
 
-            // On limite la taille entre le min et le max
             newScale.x = Mathf.Clamp(newScale.x, minScale, maxScale);
             newScale.y = Mathf.Clamp(newScale.y, minScale, maxScale);
             newScale.z = Mathf.Clamp(newScale.z, minScale, maxScale);
@@ -119,7 +118,6 @@ public class PlayerMovementTutorial : MonoBehaviour
     private void Jump()
     {
         rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-        
         rb.AddForce(transform.up * jumpForce * transform.localScale.y, ForceMode.Impulse);
     }
 
@@ -130,10 +128,20 @@ public class PlayerMovementTutorial : MonoBehaviour
 
     private void OnCollisionStay(Collision collision)
     {
-        
         if (((1 << collision.gameObject.layer) & whatIsGround) != 0)
         {
-            grounded = true;
+            
+            foreach (ContactPoint contact in collision.contacts)
+            {
+                
+                if (contact.normal.y > 0.6f)
+                {
+                    grounded = true;
+                    return;
+                }
+            }
+            
+            grounded = false;
         }
     }
 
