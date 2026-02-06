@@ -16,6 +16,7 @@ public class PlayerMovementTutorial : MonoBehaviour
     public float scaleSpeed = 0.8f;
     public float minScale = 0.5f;
     public float maxScale = 5f;
+    private bool scaleLock = false;
 
     [Header("Keybinds")]
     public KeyCode jumpKey = KeyCode.Space;
@@ -67,6 +68,18 @@ public class PlayerMovementTutorial : MonoBehaviour
             Jump();
             Invoke(nameof(ResetJump), jumpCooldown);
         }
+
+        if (Input.GetKey(KeyCode.L))
+        {
+            if (scaleLock)
+            {
+                scaleLock = false;
+            }
+            else
+            {
+                scaleLock = true;
+            }
+        }
     }
 
     private void UpdateFriction()
@@ -87,6 +100,10 @@ public class PlayerMovementTutorial : MonoBehaviour
 
     private void HandleScaling()
     {
+        if (scaleLock)
+        {
+            return;    
+        }
         if (verticalInput != 0)
         {
             float scaleChange = (verticalInput * scaleSpeed * Time.deltaTime) * -1.0f;
